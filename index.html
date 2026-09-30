@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0866ff">
+<title>Messenger Future</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f0f2f5;color:#050505}
+.app{height:100vh;display:flex;overflow:hidden}.sidebar{width:330px;background:#fff;border-right:1px solid #ddd;display:flex;flex-direction:column}
+.head{padding:16px;font-size:24px;font-weight:700;display:flex;justify-content:space-between}.search{margin:0 12px 12px;padding:11px 14px;border:0;border-radius:22px;background:#f0f2f5;width:calc(100% - 24px);font-size:15px}
+.users{overflow:auto}.user{padding:12px 16px;display:flex;gap:12px;align-items:center;cursor:pointer}.user:hover{background:#f0f2f5}.avatar{width:48px;height:48px;border-radius:50%;background:#1877f2;color:white;display:grid;place-items:center;font-weight:bold}.online{font-size:12px;color:#31a24c}
+.chat{flex:1;display:flex;flex-direction:column;min-width:0}.chathead{height:72px;background:white;border-bottom:1px solid #ddd;display:flex;align-items:center;padding:10px 16px;gap:12px}.title{font-weight:bold}.actions{margin-left:auto;display:flex;gap:8px}.btn{border:0;border-radius:50%;width:40px;height:40px;background:#e7f3ff;color:#0866ff;font-size:18px;cursor:pointer}.messages{flex:1;overflow:auto;padding:20px}.bubble{max-width:70%;padding:10px 14px;border-radius:18px;margin:6px 0;line-height:1.35}.me{margin-left:auto;background:#0866ff;color:white}.other{background:#e4e6eb}.composer{background:white;border-top:1px solid #ddd;padding:10px;display:flex;gap:8px}.composer input{flex:1;border:0;background:#f0f2f5;border-radius:22px;padding:12px 16px;outline:none}.send{border:0;background:#0866ff;color:white;border-radius:22px;padding:0 20px;font-weight:bold}
+.empty{height:100%;display:grid;place-items:center;color:#65676b;text-align:center;padding:30px}
+@media(max-width:700px){.sidebar{width:92px}.head span,.search,.user .info{display:none}.user{justify-content:center;padding:12px 4px}.chathead{height:64px}.messages{padding:12px}.bubble{max-width:82%}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="head"><span>Chats</span><b>💬</b></div>
+  <input id="search" class="search" placeholder="Search">
+  <div id="users" class="users"></div>
+</aside>
+<main class="chat">
+  <div id="chathead" class="chathead">
+    <div class="avatar">?</div><div><div class="title">Select a chat</div><div class="online">Ready</div></div>
+    <div class="actions"><button class="btn" onclick="startCall('audio')">📞</button><button class="btn" onclick="startCall('video')">📹</button></div>
+  </div>
+  <div id="messages" class="messages"><div class="empty"><div><h2>Messenger Future</h2><p>Select a person to start chatting.</p><p>This version is ready to be connected to a real backend later.</p></div></div></div>
+  <div class="composer"><button class="btn" onclick="attach()">＋</button><input id="msg" placeholder="Type a message..." onkeydown="if(event.key==='Enter')send()"><button class="send" onclick="send()">Send</button></div>
+</main>
+</div>
+<script>
+const people=[
+ {id:1,name:"Rahim",status:"Online"},
+ {id:2,name:"Karim",status:"Online"},
+ {id:3,name:"Mitu",status:"Offline"},
+ {id:4,name:"Sakib",status:"Online"}
+];
+let selected=null;
+const history=JSON.parse(localStorage.getItem("mf_history")||"{}");
+const users=document.getElementById("users"), messages=document.getElementById("messages");
+function renderUsers(q=""){
+ users.innerHTML=people.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())).map(p=>
+ `<div class="user" onclick="openChat(${p.id})"><div class="avatar">${p.name[0]}</div><div class="info"><b>${p.name}</b><div class="online">${p.status}</div></div></div>`).join("");
+}
+function openChat(id){
+ selected=people.find(p=>p.id===id);
+ document.querySelector(".chathead .avatar").textContent=selected.name[0];
+ document.querySelector(".title").textContent=selected.name;
+ document.querySelector(".online").textContent=selected.status;
+ renderMessages();
+}
+function renderMessages(){
+ const arr=history[selected.id]||[];
+ messages.innerHTML=arr.length?arr.map(x=>`<div class="bubble ${x.me?'me':'other'}">${escapeHtml(x.text)}</div>`).join(""):`<div class="empty"><div><h3>No messages yet</h3><p>Send the first message to ${selected.name}.</p></div></div>`;
+ messages.scrollTop=messages.scrollHeight;
+}
+function send(){
+ if(!selected)return alert("Select a chat first");
+ const input=document.getElementById("msg"), text=input.value.trim(); if(!text)return;
+ (history[selected.id] ||= []).push({text,me:true});
+ localStorage.setItem("mf_history",JSON.stringify(history)); input.value=""; renderMessages();
+}
+function attach(){alert("Attachment module reserved for the backend version.");}
+async function startCall(type){
+ if(!selected)return alert("Select a chat first");
+ try{await navigator.mediaDevices.getUserMedia({audio:true,video:type==="video"});alert(type==="video"?"Camera & microphone permission granted.":"Microphone permission granted.\nReal-time calling will be connected in the backend version.");}
+ catch(e){alert("Permission was not granted.");}
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+document.getElementById("search").oninput=e=>renderUsers(e.target.value);
+renderUsers();
+</script>
+</body>
+</html>
